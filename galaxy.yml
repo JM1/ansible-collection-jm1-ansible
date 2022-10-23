@@ -1,0 +1,16 @@
+---
+authors:
+  - Jakob Meng (https://github.com/jm1)
+dependencies: {}
+description: null
+documentation: https://github.com/jm1/ansible-collection-jm1-ansible/tree/master/docs
+homepage: https://github.com/jm1/ansible-collection-jm1-ansible
+issues: https://github.com/jm1/ansible-collection-jm1-ansible/issues
+#license: GPL-3.0-or-later
+license_file: LICENSE.md
+name: ansible
+namespace: jm1
+readme: README.md
+repository: https://github.com/jm1/ansible-collection-jm1-ansible
+tags: null
+version: 2022.10.23
