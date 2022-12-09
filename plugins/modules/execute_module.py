@@ -31,11 +31,11 @@ description:
     - Ansible's C(block) statement does not support Jinja2 templates, so
       Ansible does not allow to define tasks in a variable and pass this
       variable to C(block).
-    - The implementation is inspired by Ansible's M(normal) action plugin which
-      unfortunately cannot be called directly:
-      U(https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py)
-    - The C(when) support is inspired by Ansible's M(assert) action plugin:
-      U(https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/assert.py)
+    - "The implementation is inspired by Ansible's M(normal) action plugin
+       which unfortunately cannot be called directly:
+       U(https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py)"
+    - "The C(when) support is inspired by Ansible's M(assert) action plugin:
+       U(https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/assert.py)"
 
 options:
     name:
@@ -75,10 +75,10 @@ notes:
       them causes Ansible to raise errors such as
       B(MODULE FAILURE\nSee stdout/stderr for the exact error).
 
-    - Ansible's free-form parameters are not supported because Ansible does not
-      allow arbitrary modules to use free-form parameters. So please change
-      statements such as C(- debug: msg="") to use non-free-form parameters
-      such as C(- debug: { msg: "" }).
+    - "Ansible's free-form parameters are not supported because Ansible does
+       not allow arbitrary modules to use free-form parameters. So please
+       change statements such as C(- debug: msg='') to use non-free-form
+       parameters such as C(- debug: { msg: '' })."
 
     - Several Ansible modules such as M(ansible.builtin.debug) are partially or
       completely implemented as Action plugins, but are fully supported.
