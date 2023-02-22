@@ -3,9 +3,9 @@
 This role helps with executing Ansible action plugins and Ansible modules which have been defined in Ansible variables.
 
 Role variable `duties` defines a list of tasks which will be run by this role. Each task calls an Ansible module similar
-to tasks in roles or playbooks except that only few [keywords][playbooks-keywords] such as `register` and `when` are
-supported. For example, to ensure the inventory name for the current Ansible host being iterated over in the play is in
-`/etc/hosts` define variable `duties` in [`group_vars` or `host_vars`][ansible-inventory] as such:
+to tasks in roles or playbooks except that only few [keywords][playbooks-keywords] such as `when` are supported. For
+example, to ensure the inventory name for the current Ansible host being iterated over in the play is in `/etc/hosts`
+define variable `duties` in [`group_vars` or `host_vars`][ansible-inventory] as such:
 
 ```yml
 duties:
@@ -63,7 +63,7 @@ modules and thus cannot be called from `jm1.ansible.execute_module`. Doing so ca
 for arbitrary modules, so for example, change from `- debug: msg=""` to `- debug: { msg: "" }`.
 
 [^supported-keywords]: Tasks will be executed with [`jm1.ansible.execute_module`][jm1-ansible-execute-module] which
-supports keywords `register` and `when` only.
+supports keyword `when` only.
 
 [ansible-builtin-meta]: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/meta_module.html
 [jm1-ansible-execute-module]: https://github.com/JM1/ansible-collection-jm1-ansible/blob/master/plugins/modules/execute_module.py
