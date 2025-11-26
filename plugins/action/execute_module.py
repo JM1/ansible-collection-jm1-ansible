@@ -3,7 +3,7 @@
 # vim:set fileformat=unix shiftwidth=4 softtabstop=4 expandtab:
 # kate: end-of-line unix; space-indent on; indent-width 4; remove-trailing-spaces modified;
 
-# Copyright: (c) 2022, Jakob Meng <jakobmeng@web.de>
+# Copyright: (c) 2022-2025, Jakob Meng <jakobmeng@web.de>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -19,15 +19,56 @@ from ansible.utils.vars import isidentifier, merge_hash
 import importlib
 
 
+try:
+    from ansible.errors import AnsibleValueOmittedError
+    ANSIBLE_2_19_TYPE_SYSTEM = True
+except ImportError:
+    ANSIBLE_2_19_TYPE_SYSTEM = False
+
+
 class ActionModule(ActionBase):
 
     _VALID_ARGS = frozenset(('args', 'name', 'register', 'when'))
 
+    @classmethod
+    def finalize_task_arg(cls, name, value, templar, context):
+        """
+        Task argument finalization hook (Ansible 2.19+)
+
+        This method is invoked for each task argument to enable custom
+        templating. It ensures module names and args are correctly
+        templated, while conditionals ('when') properly handle Ansible's
+        'omit' keyword.
+        """
+
+        if name == 'when':
+            # In Ansible 2.19+, if the 'when' parameter resolves to the 'omit'
+            # value, Ansible raises AnsibleValueOmittedError. We catch this
+            # error and return None, indicating "no condition specified" and
+            # skipping conditional evaluation. This enables optional
+            # conditionals in loops, for example:
+            #   jm1.ansible.execute_module:
+            #     when: "{{ item.when | default(omit) }}"
+            #     ...
+            try:
+                return templar.template(value)
+            except AnsibleValueOmittedError:
+                # The 'when' parameter was omitted - return None to indicate
+                # "no condition" which skips conditional evaluation
+                return None
+
+        return templar.template(value)
+
     def run(self, tmp=None, task_vars=None):
-        # Inspired by Ansible's 'normal' action plugin
-        # Ref.:
-        # https://docs.ansible.com/ansible/latest/plugins/action.html
-        # https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py
+        """
+        Run any Ansible module with the specified arguments.
+
+        The design is based on the Ansible action plugins 'normal' and 'assert'.
+        Ref.:
+        https://docs.ansible.com/ansible/latest/plugins/action.html
+        https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py
+        https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/assert.py
+        """
 
         self._supports_check_mode = True
         self._supports_async = True
@@ -52,20 +93,31 @@ class ActionModule(ActionBase):
                 if not isinstance(whens, list):
                     whens = [whens]
 
-                cond = Conditional(loader=self._loader)
+                if ANSIBLE_2_19_TYPE_SYSTEM:
+                    # Ansible 2.19 and later
+                    for when in whens:
+                        evaluated = self._templar.evaluate_conditional(when)
+                        if not evaluated:
+                            result['changed'] = False
+                            result['skipped'] = True
+                            result['skip_reason'] = 'Conditional result was False'
+                            return result
+                else:
+                    # Ansible 2.18 and earlier
+                    cond = Conditional(loader=self._loader)
 
-                for when in whens:
-                    cond.when = [when]
-                    evaluated = cond.evaluate_conditional(
-                        templar=self._templar, all_vars=task_vars)
-                    if not evaluated:
-                        # Ref.: https://github.com/ansible/ansible/blob/
-                        #       cb2e434dd2359a9fe1c00e75431f4abeff7381e8/
-                        #       lib/ansible/executor/task_executor.py#L455
-                        result['changed'] = False
-                        result['skipped'] = True
-                        result['skip_reason'] = 'Conditional result was False'
-                        return result
+                    for when in whens:
+                        cond.when = [when]
+                        evaluated = cond.evaluate_conditional(
+                            templar=self._templar, all_vars=task_vars)
+                        if not evaluated:
+                            # Ref.: https://github.com/ansible/ansible/blob/
+                            #       cb2e434dd2359a9fe1c00e75431f4abeff7381e8/
+                            #       lib/ansible/executor/task_executor.py#L455
+                            result['changed'] = False
+                            result['skipped'] = True
+                            result['skip_reason'] = 'Conditional result was False'
+                            return result
 
             if result.get('invocation', {}).get('plugin_args'):
                 # avoid passing to modules in case of no_log
@@ -234,6 +286,7 @@ class ActionModule(ActionBase):
                                                      wrap_async=wrap_async)
 
                 result = merge_hash(result, module_result)
+                plugin_result = module_result
 
             if plugin_register:
                 # This overwrites ansible_facts which
