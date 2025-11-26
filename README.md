@@ -77,7 +77,7 @@ You can also include it in a `requirements.yml` file and install it via
 ---
 collections:
   - name: jm1.ansible
-    version: 2024.5.30
+    version: 2025.11.26
 ```
 
 ## Usage and Playbooks
